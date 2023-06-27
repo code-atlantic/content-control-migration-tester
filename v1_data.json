@@ -1,0 +1,111 @@
+{
+    "settings": {
+        "default_denial_message": "I love Content Control, its the best plugin for restricting access to all of our content types.",
+        "restrictions": [
+            {
+                "index": 0,
+                "title": "Test #1",
+                "who": "logged_in",
+                "roles": {
+                    "administrator": "administrator",
+                    "contributor": "contributor",
+                    "subscriber": "subscriber"
+                },
+                "conditions": [
+                    [
+                        {
+                            "target": "post_selected",
+                            "settings": {
+                                "selected": [
+                                    1
+                                ]
+                            }
+                        },
+                        {
+                            "target": "post_w_category",
+                            "settings": {
+                                "selected": [
+                                    1
+                                ]
+                            }
+                        }
+                    ],
+                    [
+                        {
+                            "not_operand": 1,
+                            "target": "is_home"
+                        }
+                    ]
+                ],
+                "protection_method": "custom_message",
+                "show_excerpts": 1,
+                "override_default_message": 1,
+                "custom_message": "Duh we override!",
+                "redirect_type": "login",
+                "redirect_url": "",
+                "meta": ""
+            },
+            {
+                "index": 1,
+                "title": "Test #2",
+                "who": "logged_out",
+                "roles": [],
+                "conditions": [
+                    [
+                        {
+                            "target": "post_ID",
+                            "settings": {
+                                "selected": 1
+                            }
+                        },
+                        {
+                            "target": "is_front_page"
+                        },
+                        {
+                            "target": "tax_category_selected",
+                            "settings": {
+                                "selected": [
+                                    1
+                                ]
+                            }
+                        }
+                    ]
+                ],
+                "protection_method": "redirect",
+                "custom_message": "",
+                "redirect_type": "login",
+                "redirect_url": "",
+                "meta": ""
+            },
+            {
+                "index": 2,
+                "title": "Test #3",
+                "who": "logged_in",
+                "roles": {
+                    "author": "author",
+                    "contributor": "contributor"
+                },
+                "conditions": [
+                    [
+                        {
+                            "target": "is_home"
+                        }
+                    ]
+                ],
+                "protection_method": "redirect",
+                "custom_message": "",
+                "redirect_type": "custom",
+                "redirect_url": "https:\/\/google.com",
+                "meta": ""
+            }
+        ]
+    },
+    "user_meta": {
+        "_jp_cc_reviews_dismissed_triggers": false,
+        "_jp_cc_reviews_last_dismissed": false,
+        "_jp_cc_reviews_already_did": false
+    },
+    "plugin_meta": {
+        "jp_cc_reviews_installed_on": "2023-06-26 09:24:35"
+    }
+}

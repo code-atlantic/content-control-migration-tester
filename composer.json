@@ -1,0 +1,14 @@
+{
+    "name": "code-atlantic/content-control",
+    "minimum-stability": "dev",
+    "require-dev": {
+        "code-atlantic/coding-standards": "dev-develop",
+        "dealerdirect/phpcodesniffer-composer-installer": "^0.7"
+    },
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}
