@@ -16,6 +16,8 @@ namespace ContentControlMigrationTester;
 
 defined( 'ABSPATH' ) || exit;
 
+define( 'CONTENT_CONTROL_LOGGING', true );
+
 // Add admin bar menu item and sub items to reset v1 data, clear v2 data etc.
 \add_action( 'admin_bar_menu', __NAMESPACE__ . '\add_admin_bar_menu_item', 999 );
 
@@ -30,14 +32,16 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		]
 	);
 
+	// Add options to change plugins:
+
 	$wp_admin_bar->add_menu(
 		[
-			'id'     => 'content-control-migration-tester-save_v1_data',
-			'title'  => 'Save v1 Data',
+			'id'     => 'content-control-migration-tester-plugins-v1',
+			'title'  => 'Activate v1',
 			'parent' => 'content-control-migration-tester',
 			'href'   => \add_query_arg(
 				[
-					'cc_action' => 'save_v1_data',
+					'cc_action' => 'activate_v1',
 					'cc_nonce'  => $nonce,
 				]
 			),
@@ -46,43 +50,24 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 
 	$wp_admin_bar->add_menu(
 		[
-			'id'     => 'content-control-migration-tester-load_v1_data',
-			'title'  => 'Load v1 Data',
+			'id'     => 'content-control-migration-tester-plugins-v2',
+			'title'  => 'Activate v2',
 			'parent' => 'content-control-migration-tester',
 			'href'   => \add_query_arg(
 				[
-					'cc_action' => 'load_v1_data',
+					'cc_action' => 'activate_v2',
 					'cc_nonce'  => $nonce,
 				]
 			),
 		]
 	);
 
+	// Add Data submenu
 	$wp_admin_bar->add_menu(
 		[
-			'id'     => 'content-control-migration-tester-delete_v1_data',
-			'title'  => 'Delete v1 Data',
+			'id'     => 'content-control-migration-tester-data',
+			'title'  => 'Load/Save/Reset Data',
 			'parent' => 'content-control-migration-tester',
-			'href'   => \add_query_arg(
-				[
-					'cc_action' => 'delete_v1_data',
-					'cc_nonce'  => $nonce,
-				]
-			),
-		]
-	);
-
-	$wp_admin_bar->add_menu(
-		[
-			'id'     => 'content-control-migration-tester-delete_v2_data',
-			'title'  => 'Delete v2 Data',
-			'parent' => 'content-control-migration-tester',
-			'href'   => \add_query_arg(
-				[
-					'cc_action' => 'delete_v2_data',
-					'cc_nonce'  => $nonce,
-				]
-			),
 		]
 	);
 
@@ -90,7 +75,7 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		[
 			'id'     => 'content-control-migration-tester-clean_install',
 			'title'  => 'Clean Install',
-			'parent' => 'content-control-migration-tester',
+			'parent' => 'content-control-migration-tester-data',
 			'href'   => \add_query_arg(
 				[
 					'cc_action' => 'clean_install',
@@ -104,10 +89,86 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		[
 			'id'     => 'content-control-migration-tester-clear_completed_upgrades',
 			'title'  => 'Clear Completed Upgrades',
-			'parent' => 'content-control-migration-tester',
+			'parent' => 'content-control-migration-tester-data',
 			'href'   => \add_query_arg(
 				[
 					'cc_action' => 'clear_completed_upgrades',
+					'cc_nonce'  => $nonce,
+				]
+			),
+		]
+	);
+
+	// Add Separator
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-v1-separator',
+			'title'  => '---- V1 Data ----',
+			'parent' => 'content-control-migration-tester-data',
+			'href'   => '#',
+		]
+	);
+
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-load_v1_data',
+			'title'  => 'Load v1 Data',
+			'parent' => 'content-control-migration-tester-data',
+			'href'   => \add_query_arg(
+				[
+					'cc_action' => 'load_v1_data',
+					'cc_nonce'  => $nonce,
+				]
+			),
+		]
+	);
+
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-save_v1_data',
+			'title'  => 'Save v1 Data',
+			'parent' => 'content-control-migration-tester-data',
+			'href'   => \add_query_arg(
+				[
+					'cc_action' => 'save_v1_data',
+					'cc_nonce'  => $nonce,
+				]
+			),
+		]
+	);
+
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-delete_v1_data',
+			'title'  => 'Delete v1 Data',
+			'parent' => 'content-control-migration-tester-data',
+			'href'   => \add_query_arg(
+				[
+					'cc_action' => 'delete_v1_data',
+					'cc_nonce'  => $nonce,
+				]
+			),
+		]
+	);
+
+	// Add Separator
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-v2',
+			'title'  => '---- V2 Data ----',
+			'parent' => 'content-control-migration-tester-data',
+			'href'   => '#',
+		]
+	);
+
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-delete_v2_data',
+			'title'  => 'Delete v2 Data',
+			'parent' => 'content-control-migration-tester-data',
+			'href'   => \add_query_arg(
+				[
+					'cc_action' => 'delete_v2_data',
 					'cc_nonce'  => $nonce,
 				]
 			),
@@ -132,7 +193,22 @@ function listen_for_admin_bar_menu_item_clicks() {
 		return;
 	}
 
+	if ( ! function_exists( 'activate_plugin' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+
 	switch ( $_GET['cc_action'] ) {
+		case 'activate_v1':
+			clean_install();
+			load_v1_data();
+			deactivate_plugins( 'content-control/content-control.php', true );
+			activate_plugin( 'content-control-old/content-control-old.php', admin_url( 'options-general.php?page=jp-cc-settings' ), false, true );
+			return;
+		case 'activate_v2':
+			clean_install();
+			deactivate_plugins( 'content-control-old/content-control-old.php', true );
+			activate_plugin( 'content-control/content-control.php', admin_url( 'options-general.php?page=content-control-settings' ), false, true );
+			return;
 		case 'save_v1_data':
 			save_v1_data();
 			break;
@@ -299,14 +375,6 @@ function delete_v2_data() {
 		\delete_site_option( $option );
 	}
 }
-
-
-
-
-
-
-
-
 
 function set_data_versioning( $v = 1 ) {
 	\update_option(
