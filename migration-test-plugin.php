@@ -18,9 +18,16 @@ defined( 'ABSPATH' ) || exit;
 
 define( 'CONTENT_CONTROL_LOGGING', true );
 
+define( 'TRUSTEDLOGIN_DISABLE_LOCAL_NOTICE', true );
+
 // Add admin bar menu item and sub items to reset v1 data, clear v2 data etc.
 \add_action( 'admin_bar_menu', __NAMESPACE__ . '\add_admin_bar_menu_item', 999 );
 
+/**
+ * Add admin bar menu item and sub items to reset v1 data, clear v2 data etc.
+ *
+ * @param \WP_Admin_Bar $wp_admin_bar Admin bar instance.
+ */
 function add_admin_bar_menu_item( $wp_admin_bar ) {
 	$nonce = \wp_create_nonce( 'content-control-migration-tester' );
 
@@ -28,11 +35,8 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		[
 			'id'    => 'content-control-migration-tester',
 			'title' => 'Content Control Tester',
-			// 'parent' => 'site-name',
 		]
 	);
-
-	// Add options to change plugins:
 
 	$wp_admin_bar->add_menu(
 		[
@@ -62,7 +66,6 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		]
 	);
 
-	// Add Data submenu
 	$wp_admin_bar->add_menu(
 		[
 			'id'     => 'content-control-migration-tester-data',
@@ -99,7 +102,6 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		]
 	);
 
-	// Add Separator
 	$wp_admin_bar->add_menu(
 		[
 			'id'     => 'content-control-migration-tester-v1-separator',
@@ -199,13 +201,10 @@ function listen_for_admin_bar_menu_item_clicks() {
 
 	switch ( $_GET['cc_action'] ) {
 		case 'activate_v1':
-			clean_install();
-			load_v1_data();
 			deactivate_plugins( 'content-control/content-control.php', true );
 			activate_plugin( 'content-control-old/content-control-old.php', admin_url( 'options-general.php?page=jp-cc-settings' ), false, true );
 			return;
 		case 'activate_v2':
-			clean_install();
 			deactivate_plugins( 'content-control-old/content-control-old.php', true );
 			activate_plugin( 'content-control/content-control.php', admin_url( 'options-general.php?page=content-control-settings' ), false, true );
 			return;
@@ -351,16 +350,24 @@ function delete_v2_data() {
 		\delete_transient( $transient );
 	}
 
+	// Delete the log file if it exists.
+	if ( function_exists( '\ContentControl\plugin' ) ) {
+		\ContentControl\plugin( 'logging' )->delete_logs();
+	}
+
 	$option_keys = [
 		'content_control_settings',
 		'content_control_version',
 		'content_control_activated',
 		'content_control_data_versioning',
-		'content_control_debug_log_token',
+		'content_control_debug_log_token', // delete log first.
 		'content_control_installed_on',
 		'content_control_known_blockTypes',
 		'content_control_pro_version',
 		'content_control_completed_upgrades',
+		'content_control_license',
+		'content_control_pro_activation_date',
+		'content_control_connect_token',
 	];
 
 	foreach ( $option_keys as $option ) {
