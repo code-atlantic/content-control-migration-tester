@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin headers
- * Plugin Name: Content Control Migration Tester
+ * Plugin Name: Content Control Migration Helper Plugin
  * Plugin URI:
- * Description: Test the migration from Content Control v1 to v2
- * Version: 1.0.0
+ * Description: Testing & troubleshooting for the migration from Content Control v1 to v2
+ * Version: 1.1.0
  * Author: Code Atlantic
  * Author URI: https://code-atlantic.com/
  * Text Domain: content-control-migration-tester
