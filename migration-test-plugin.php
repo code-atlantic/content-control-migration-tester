@@ -10,6 +10,8 @@
  * Text Domain: content-control-migration-tester
  * Domain Path: /languages
  * License: GPLv2 or later
+ *
+ * @package ContentControlMigrationTester
  */
 
 namespace ContentControlMigrationTester;
@@ -17,8 +19,6 @@ namespace ContentControlMigrationTester;
 defined( 'ABSPATH' ) || exit;
 
 define( 'CONTENT_CONTROL_LOGGING', true );
-
-define( 'TRUSTEDLOGIN_DISABLE_LOCAL_NOTICE', true );
 
 // Add admin bar menu item and sub items to reset v1 data, clear v2 data etc.
 \add_action( 'admin_bar_menu', __NAMESPACE__ . '\add_admin_bar_menu_item', 999 );
@@ -60,6 +60,33 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 			'href'   => \add_query_arg(
 				[
 					'cc_action' => 'activate_v2',
+					'cc_nonce'  => $nonce,
+				]
+			),
+		]
+	);
+
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-import_v1_data',
+			'title'  => 'Import v1 Data',
+			'parent' => 'content-control-migration-tester',
+			'href'   => \add_query_arg(
+				[
+					'page' => 'content_control_migrator_json_uploader',
+				]
+			),
+		]
+	);
+
+	$wp_admin_bar->add_menu(
+		[
+			'id'     => 'content-control-migration-tester-export_v1_data',
+			'title'  => 'Export v1 Data',
+			'parent' => 'content-control-migration-tester',
+			'href'   => \add_query_arg(
+				[
+					'cc_action' => 'export_v1_data',
 					'cc_nonce'  => $nonce,
 				]
 			),
@@ -153,7 +180,7 @@ function add_admin_bar_menu_item( $wp_admin_bar ) {
 		]
 	);
 
-	// Add Separator
+	// Add Separator.
 	$wp_admin_bar->add_menu(
 		[
 			'id'     => 'content-control-migration-tester-v2',
@@ -208,6 +235,9 @@ function listen_for_admin_bar_menu_item_clicks() {
 			deactivate_plugins( 'content-control-old/content-control-old.php', true );
 			activate_plugin( 'content-control/content-control.php', admin_url( 'options-general.php?page=content-control-settings' ), false, true );
 			return;
+		case 'export_v1_data':
+			export_v1_data();
+			break;
 		case 'save_v1_data':
 			save_v1_data();
 			break;
@@ -278,11 +308,11 @@ function delete_v1_data() {
 }
 
 /**
- * Save v1 data to a json file.
+ * Get v1 data.
  *
- * @return void
+ * @return array
  */
-function save_v1_data() {
+function get_v1_data() {
 	$data = [];
 
 	$data['settings'] = \get_option( 'jp_cc_settings', [] );
@@ -297,17 +327,50 @@ function save_v1_data() {
 		'jp_cc_reviews_installed_on' => \get_option( 'jp_cc_reviews_installed_on' ),
 	];
 
+	return $data;
+}
+
+/**
+ * Save v1 data to a json file.
+ *
+ * @return void
+ */
+function save_v1_data() {
+	$data = get_v1_data();
+
 	// Save to file in the same folder as v1_data.json.
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 	\file_put_contents( __DIR__ . '/v1_data.json', \wp_json_encode( $data ) );
 }
 
 /**
- * Load v1 data from a json file.
+ * Export v1 data to a json file.
  *
  * @return void
  */
-function load_v1_data() {
-	$data = \json_decode( \file_get_contents( __DIR__ . '/v1_data.json' ), true );
+function export_v1_data() {
+	$data = get_v1_data();
+	header( 'Content-Type: application/json' );
+	header( 'Content-Disposition: attachment; filename="v1_data.json"' );
+	header( 'Content-Length: ' . strlen( \wp_json_encode( $data ) ) );
+	echo \wp_json_encode( $data );
+	exit;
+}
+
+
+/**
+ * Load v1 data from a json file.
+ *
+ * @param array|null $data Data to load. If null, load from file.
+ *
+ * @return void
+ */
+function load_v1_data( $data = null ) {
+
+	if ( null === $data ) {
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$data = \json_decode( \file_get_contents( __DIR__ . '/v1_data.json' ), true );
+	}
 
 	\update_option( 'jp_cc_settings', $data['settings'] );
 
@@ -383,6 +446,11 @@ function delete_v2_data() {
 	}
 }
 
+/**
+ * Set data versioning to v1 or v2.
+ *
+ * @param int $v 1 or 2.
+ */
 function set_data_versioning( $v = 1 ) {
 	\update_option(
 		'content_control_data_versioning', [
@@ -394,6 +462,158 @@ function set_data_versioning( $v = 1 ) {
 	);
 }
 
+/**
+ * Delete v2+ completed upgrades data.
+ */
 function clear_completed_upgrades() {
 	\delete_option( 'content_control_completed_upgrades' );
+}
+
+add_action( 'admin_footer', function () {
+	?>
+	<script type="text/javascript">
+		jQuery(function () {
+			$ = jQuery;
+
+			const idPrefix = 'wp-admin-bar-content-control-migration-tester-';
+			
+			const confirmLinks = [
+				'clean_install',
+				'load_v1_data',
+				'save_v1_data',
+				'delete_v1_data',
+				'delete_v2_data',
+				'clear_completed_upgrades',
+				
+			];
+
+			const selector = `#${idPrefix}` + confirmLinks.join(` a, #${idPrefix}`) + ' a';
+
+			const $links = $( selector );
+
+			console.log( confirmLinks,selector, $links );
+
+			$links.on('click', function (event) {
+				const $this = $(this);
+				const id = $this.parent().attr('id')
+					.replace(idPrefix, '')
+					// Replace all _ with spaces
+					.replace(/_/g, " ")
+					// Uppercase first letter of each word
+					.replace(/\w\S*/g, function (txt) {
+						return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+					});
+				event.preventDefault();
+
+				if (confirm( 'Are you sure you want to ' + id )) {
+					window.location.href = $this.attr('href');
+				}
+				
+			})
+		})
+	</script>
+	<?php
+} );
+
+/**
+ * Add a hidden page to upload a JSON file.
+ */
+function json_uploader_admin_menu() {
+	// This adds a hidden page, as there's no parent slug.
+	add_submenu_page(
+		null,                // No parent slug = hidden page.
+		'JSON Uploader',     // Page Title.
+		'JSON Uploader',     // Menu Title - won't be used as it's hidden.
+		'manage_options',    // Capability.
+		'content_control_migrator_json_uploader',     // Menu Slug.
+		'\ContentControlMigrationTester\json_uploader_admin_page'  // Callback function.
+	);
+}
+
+add_action( 'admin_menu', '\ContentControlMigrationTester\json_uploader_admin_menu' );
+
+/**
+ * Process the uploaded file.
+ */
+function json_uploader_admin_page() {
+	if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+		process_uploaded_file();
+	} else {
+		display_upload_form();
+	}
+}
+
+/**
+ * Display the upload form.
+ */
+function display_upload_form() {
+	$nonce = wp_create_nonce( 'json_uploader_nonce' );
+	?>
+	<form action="" method="post" enctype="multipart/form-data">
+		Select JSON File to Upload:
+		<input type="file" name="jsonFile" id="jsonFile">
+		<input type="hidden" name="json_uploader_nonce" value="<?php echo esc_attr( $nonce ); ?>">
+		<input type="submit" value="Upload JSON" name="submit">
+	</form>
+	<?php
+}
+
+/**
+ * Process the uploaded file.
+ */
+function process_uploaded_file() {
+
+	// Check for nonce.
+	if ( ! isset( $_POST['json_uploader_nonce'] ) || ! wp_verify_nonce( wp_unslash( sanitize_key( $_POST['json_uploader_nonce'] ) ), 'json_uploader_nonce' ) ) {
+		die( 'Security check failed!' );
+	}
+
+	if ( isset( $_FILES['jsonFile'] ) ) {
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$file = $_FILES['jsonFile'];
+
+		// Check for upload errors.
+		if ( 0 !== $file['error'] ) {
+			echo 'Error uploading file!';
+			return;
+		}
+
+		// Ensure it's a JSON file.
+		$file_type = pathinfo( $file['name'], PATHINFO_EXTENSION );
+		if ( 'json' !== $file_type ) {
+			echo 'Only JSON files are allowed!';
+			return;
+		}
+
+		// Read the content.
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$json_data = file_get_contents( $file['tmp_name'] );
+		$json      = json_decode( $json_data, true );
+
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			echo 'Invalid JSON format!';
+			return;
+		}
+
+		// Import the data.
+		load_v1_data( $json );
+		// Print success and code to reload in 5 seconds.
+
+		// Conditionaly change url based on if v1 or v2 is active.
+		$url = function_exists( '\ContentControl\plugin' ) ?
+			admin_url( 'options-general.php?page=content-control-settings' ) :
+			admin_url( 'options-general.php?page=jp-cc-settings' );
+
+		?>
+		<div id="message" class="updated notice is-dismissible">
+			<p>JSON file uploaded successfully. Reloading in 5 seconds...</p>
+		</div>
+		<script>
+			setTimeout( function () {
+				window.location.href = "<?php echo esc_url_raw( $url ); ?>";
+			}, 3000 );
+		</script>
+
+		<?php
+	}
 }
