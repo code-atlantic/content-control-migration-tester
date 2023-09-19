@@ -466,6 +466,7 @@ function set_data_versioning( $v = 1 ) {
  * Delete v2+ completed upgrades data.
  */
 function clear_completed_upgrades() {
+	set_data_versioning( 1 );
 	\delete_option( 'content_control_completed_upgrades' );
 }
 
