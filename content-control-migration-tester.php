@@ -310,7 +310,7 @@ function delete_v1_data() {
 /**
  * Get v1 data.
  *
- * @return array
+ * @return array<string,array<string,string|bool>> Array of data.
  */
 function get_v1_data() {
 	$data = [];
@@ -454,6 +454,7 @@ function delete_v2_data() {
 function set_data_versioning( $v = 1 ) {
 	\update_option(
 		'content_control_data_versioning', [
+			'backup'       => $v,
 			'settings'     => $v,
 			'restrictions' => $v,
 			'user_meta'    => $v,
